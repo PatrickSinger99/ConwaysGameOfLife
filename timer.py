@@ -7,7 +7,7 @@ def debug_timer(func):
         result = func(*args, **kwargs)
         end = time.time()
 
-        print(f"--- {func.__name__}: {round(end - start, 4)}s ---")
+        print(f"[DEBUG] {func.__name__}: {round(end - start, 3)}s")
         return result
 
     return wrap

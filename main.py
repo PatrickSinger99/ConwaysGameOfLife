@@ -4,6 +4,7 @@ import copy
 from timer import debug_timer
 import random
 from game_logic import *
+import time
 
 
 """APP"""
@@ -11,6 +12,7 @@ from game_logic import *
 
 class App(tk.Tk):
 
+    @debug_timer
     def __init__(self):
         super().__init__()
 
@@ -36,14 +38,23 @@ class App(tk.Tk):
         self.pan_offset_x = 0
         self.pan_offset_y = 0
         self.pan_active = False
-        self.last_changed_element = None
         self.start_x = None
         self.start_y = None
+        self.zoom_level = 1
 
         # Gameplay
         self.current_gen = tk.IntVar()
         self.current_gen.set(0)
         self.autoplay_active = False
+
+        self.last_update_time = time.time()
+        self.target_game_speed = 0.05
+        self.actual_game_speed = 0
+
+        self.speed_display = tk.StringVar()
+        self.speed_display.set("")
+
+        self.speed_slider_value = tk.IntVar()
 
         """GUI"""
 
@@ -63,8 +74,18 @@ class App(tk.Tk):
         self.autoplay_button = tk.Button(self.control_frame, text="Autoplay", command=self.toggle_autoplay)
         self.autoplay_button.pack()
 
+        self.reset_zoom_button = tk.Button(self.control_frame, text="Reset Zoom", command=self.reset_zoom)
+        self.reset_zoom_button.pack()
+
         self.generation_label = tk.Label(self.control_frame, textvariable=self.current_gen)
         self.generation_label.pack(side="bottom")
+
+        self.gen_speed_label = tk.Label(self.control_frame, textvariable=self.speed_display)
+        self.gen_speed_label.pack(side="bottom")
+
+        self.speed_slider = tk.Scale(self.control_frame, orient="horizontal", from_=1, to=5, showvalue=False,
+                                     label="  1    5  10  20  50   ", variable=self.speed_slider_value)
+        self.speed_slider.pack(side="bottom")
 
         self.canvas_frame = tk.Frame(self)
         self.canvas_frame.grid(row=0, column=1)
@@ -73,16 +94,17 @@ class App(tk.Tk):
                                 highlightthickness=0, relief='ridge', bd=0)
         self.canvas.pack()
         self.canvas.bind("<MouseWheel>", self.mouse_zoom)
-        self.canvas.bind("<ButtonPress-1>", self.start_pan)
-        self.canvas.bind("<ButtonRelease-1>", self.end_pan)
-        self.canvas.bind("<B1-Motion>", self.update_pan)
+        self.canvas.bind("<ButtonPress-3>", self.start_pan)
+        self.canvas.bind("<ButtonRelease-3>", self.end_pan)
+        self.canvas.bind("<B3-Motion>", self.update_pan)
 
         """INITIAL CALLS"""
 
-        self.create_grid(72, 54)
+        # self.create_grid(72, 54)
+        self.create_grid(49, 37)
 
     @debug_timer
-    def create_grid(self, x_range, y_range, rect_size=10, rect_padding=1):
+    def create_grid(self, x_range, y_range, rect_size=15, rect_padding=1):
 
         for y in range(y_range):
             for x in range(x_range):
@@ -114,8 +136,8 @@ class App(tk.Tk):
                 self.cell_states[x, y] = new_grid_states[x, y]
 
                 update_counter += 1
-
-        print(f"Updated {update_counter} instances")
+        self.update()
+        # print(f"Updated {update_counter} instances")
 
     def reset_grid(self):
         new_states = copy.deepcopy(self.cell_states)
@@ -143,10 +165,21 @@ class App(tk.Tk):
         self.update_grid(new_gen_dict)
         self.current_gen.set(self.current_gen.get() + 1)
 
+        print(self.speed_slider_value.get())
+
     def auto_next_gen(self):
         if self.autoplay_active:
+            self.last_update_time = time.time()
+
             self.next_generation()
-            self.after(10, self.auto_next_gen)
+
+            self.actual_game_speed = time.time() - self.last_update_time
+            wait_time = self.target_game_speed - self.actual_game_speed
+            if wait_time <= 0:
+                wait_time = 0.001
+            self.update_speed_display()
+
+            self.after(int(wait_time*1000), self.auto_next_gen)
 
     def toggle_autoplay(self):
         if not self.autoplay_active:
@@ -165,8 +198,6 @@ class App(tk.Tk):
             dict_index = list(self.cell_ids.values()).index(element_id)
             x, y = list(self.cell_ids.keys())[dict_index]
 
-            self.last_changed_element = {"id": element_id, "x": x, "y": y}
-
             if self.cell_states[x, y] == 0:
                 self.canvas.itemconfig(element_id, fill=self.live_cell_color, outline=self.live_cell_color)
                 self.cell_states[x, y] = 1
@@ -179,9 +210,20 @@ class App(tk.Tk):
         if event.delta > 0:
             self.canvas.scale("all", self.canvas.winfo_width() / 2 - self.pan_offset_x,
                               self.canvas.winfo_height() / 2 - self.pan_offset_y, 1.2, 1.2)
+
+            self.zoom_level *= 1.2
+
         elif event.delta < 0:
             self.canvas.scale("all", self.canvas.winfo_width() / 2 - self.pan_offset_x,
                               self.canvas.winfo_height() / 2 - self.pan_offset_y, 0.8, 0.8)
+
+            self.zoom_level *= 0.8
+
+    def reset_zoom(self):
+        self.canvas.scale("all", self.canvas.winfo_width() / 2 - self.pan_offset_x,
+                          self.canvas.winfo_height() / 2 - self.pan_offset_y, 1/self.zoom_level, 1/self.zoom_level)
+
+        self.zoom_level = 1
 
     def start_pan(self, event):
         self.start_x = event.x
@@ -204,16 +246,29 @@ class App(tk.Tk):
             self.canvas["cursor"] = "fleur"
             self.pan_active = True
 
-            if self.cell_states[self.last_changed_element["x"], self.last_changed_element["y"]] == 0:
-                self.canvas.itemconfig(self.last_changed_element["id"], fill=self.live_cell_color,
-                                       outline=self.live_cell_color)
-                self.cell_states[self.last_changed_element["x"], self.last_changed_element["y"]] = 1
-            else:
-                self.canvas.itemconfig(self.last_changed_element["id"], fill=self.dead_cell_color,
-                                       outline=self.dead_cell_color)
-                self.cell_states[self.last_changed_element["x"], self.last_changed_element["y"]] = 0
-
         self.canvas.scan_dragto(event.x, event.y, gain=1)
+
+    def update_speed_display(self):
+        gens_per_second = round(1 / self.actual_game_speed)
+
+        try:
+            target_per_second = round(1 / self.target_game_speed)
+        except ZeroDivisionError:
+            target_per_second = 9999
+
+        displayed_speed = min([gens_per_second, target_per_second])
+
+        self.speed_display.set(str(displayed_speed) + " Gen/sek")
+
+        # Color
+
+        difference = min([gens_per_second / target_per_second, 1])
+
+        gradient = {0.5: "#FF0D0D", 0.6: "#FF4E11", 0.7: "#FF8E15", 0.8: "#FAB733", 0.9: "#ACB334", 1: "#69B34C"}
+        for key in gradient:
+            if difference <= key:
+                self.gen_speed_label.configure(fg=gradient[key])
+                break
 
     """DEBUG"""
 
