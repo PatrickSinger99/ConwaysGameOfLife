@@ -56,6 +56,9 @@ class App(tk.Tk):
 
         self.speed_slider_value = tk.IntVar()
 
+        # TEST
+        self.glider = [[0, 0, 1], [1, 0, 1], [0, 1, 1]]
+
         """GUI"""
 
         self.control_frame = tk.Frame(self, width=200, bg="grey")
@@ -74,7 +77,7 @@ class App(tk.Tk):
         self.autoplay_button = tk.Button(self.control_frame, text="Autoplay", command=self.toggle_autoplay)
         self.autoplay_button.pack()
 
-        self.reset_zoom_button = tk.Button(self.control_frame, text="Reset Zoom", command=self.reset_zoom)
+        self.reset_zoom_button = tk.Button(self.control_frame, text="Reset View", command=self.reset_canvas_view)
         self.reset_zoom_button.pack()
 
         self.generation_label = tk.Label(self.control_frame, textvariable=self.current_gen)
@@ -84,7 +87,8 @@ class App(tk.Tk):
         self.gen_speed_label.pack(side="bottom")
 
         self.speed_slider = tk.Scale(self.control_frame, orient="horizontal", from_=1, to=5, showvalue=False,
-                                     label="  1    5  10  20  50   ", variable=self.speed_slider_value)
+                                     label="  1    5  10  20  50   ", variable=self.speed_slider_value, sliderlength=20,
+                                     sliderrelief="flat", relief="flat")
         self.speed_slider.pack(side="bottom")
 
         self.canvas_frame = tk.Frame(self)
@@ -198,12 +202,23 @@ class App(tk.Tk):
             dict_index = list(self.cell_ids.values()).index(element_id)
             x, y = list(self.cell_ids.keys())[dict_index]
 
-            if self.cell_states[x, y] == 0:
-                self.canvas.itemconfig(element_id, fill=self.live_cell_color, outline=self.live_cell_color)
-                self.cell_states[x, y] = 1
+            if False:
+                if self.cell_states[x, y] == 0:
+                    self.canvas.itemconfig(element_id, fill=self.live_cell_color, outline=self.live_cell_color)
+                    self.cell_states[x, y] = 1
+                else:
+                    self.canvas.itemconfig(element_id, fill=self.dead_cell_color, outline=self.dead_cell_color)
+                    self.cell_states[x, y] = 0
             else:
-                self.canvas.itemconfig(element_id, fill=self.dead_cell_color, outline=self.dead_cell_color)
-                self.cell_states[x, y] = 0
+                for stamp_y in range(len(self.glider)):
+                    for stamp_x in range(len(self.glider[stamp_y])):
+
+                        if self.glider[stamp_y][stamp_x] == 1:
+                            self.canvas.itemconfig(self.cell_ids[x + stamp_x, y + stamp_y], fill=self.live_cell_color, outline=self.live_cell_color)
+                            self.cell_states[x + stamp_x, y + stamp_y] = 1
+                        else:
+                            self.canvas.itemconfig(self.cell_ids[x + stamp_x, y + stamp_y], fill=self.dead_cell_color, outline=self.dead_cell_color)
+                            self.cell_states[stamp_x + x, stamp_y + y] = 0
 
     def mouse_zoom(self, event):
 
@@ -219,7 +234,10 @@ class App(tk.Tk):
 
             self.zoom_level *= 0.8
 
-    def reset_zoom(self):
+    def reset_canvas_view(self):
+
+        print(self.canvas.xview()[0], self.canvas.yview()[0])
+
         self.canvas.scale("all", self.canvas.winfo_width() / 2 - self.pan_offset_x,
                           self.canvas.winfo_height() / 2 - self.pan_offset_y, 1/self.zoom_level, 1/self.zoom_level)
 
