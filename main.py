@@ -22,11 +22,18 @@ class App(tk.Tk):
 
         """COLORS"""
 
+        # GUI
+        self.accent_color = "#3366cc"
+
         # Grid
         self.live_cell_color = "black"
         self.dead_cell_color = "white"
         self.marked_cell_color = "orange"
         self.grid_background_color = "light grey"
+
+        """IMAGES"""
+
+        self.logo_bg_image = tk.PhotoImage(file="icons/logo_bg.png")
 
         """STATE VARIABLES"""
 
@@ -56,14 +63,29 @@ class App(tk.Tk):
 
         self.speed_slider_value = tk.IntVar()
 
+        # True if a stamp is selected
+        self.stamp_active = False
+
         # TEST
         self.glider = [[0, 0, 1], [1, 0, 1], [0, 1, 1]]
 
-        """GUI"""
+        """HEADER"""
 
-        self.control_frame = tk.Frame(self, width=200, bg="grey")
+        # FRAME: Header
+        self.header_frame = tk.Frame(self, bg=self.accent_color)
+        self.header_frame.grid(row=0, column=0, columnspan=2, sticky="ew")
 
-        self.control_frame.grid(row=0, column=0, sticky="ns")
+        # TITLE
+        self.game_title_label = tk.Label(self.header_frame, text=" Conway's Game of Life Simulation", fg="white",
+                                         bg=self.header_frame["bg"], font=Font(size=14, weight="bold"),
+                                         compound="left", image=self.logo_bg_image)
+        self.game_title_label.pack(side="left", padx=3, pady=3)
+
+        """CONTROL PANEL"""
+
+        # FRAME: Control Panel
+        self.control_frame = tk.Frame(self, width=300, bg="grey")
+        self.control_frame.grid(row=1, column=0, sticky="ns")
 
         self.reset_button = tk.Button(self.control_frame, text="Reset", command=self.reset_grid)
         self.reset_button.pack()
@@ -91,20 +113,34 @@ class App(tk.Tk):
                                      sliderrelief="flat", relief="flat")
         self.speed_slider.pack(side="bottom")
 
-        self.canvas_frame = tk.Frame(self)
-        self.canvas_frame.grid(row=0, column=1)
+        self.speed_control_frame = tk.Frame(self.control_frame)
+        self.speed_control_frame.pack(side="bottom")
 
+        self.decrease_speed_button = tk.Button(self.speed_control_frame, text="-")
+        self.decrease_speed_button.grid(row=0, column=0, rowspan=2, sticky="w")
+
+        self.increase_speed_button = tk.Button(self.speed_control_frame, text="+")
+        self.increase_speed_button.grid(row=0, column=0, rowspan=2, sticky="e")
+
+
+
+        """CANVAS"""
+
+        # FRAME: Canvas
+        self.canvas_frame = tk.Frame(self)
+        self.canvas_frame.grid(row=1, column=1)
+
+        # CANVAS: Displays CGOL cells
         self.canvas = tk.Canvas(self.canvas_frame, width=800, height=600, cursor="hand2", bg=self.grid_background_color,
                                 highlightthickness=0, relief='ridge', bd=0)
-        self.canvas.pack()
         self.canvas.bind("<MouseWheel>", self.mouse_zoom)
         self.canvas.bind("<ButtonPress-3>", self.start_pan)
         self.canvas.bind("<ButtonRelease-3>", self.end_pan)
         self.canvas.bind("<B3-Motion>", self.update_pan)
+        self.canvas.pack()
 
         """INITIAL CALLS"""
 
-        # self.create_grid(72, 54)
         self.create_grid(49, 37)
 
     @debug_timer
@@ -202,7 +238,7 @@ class App(tk.Tk):
             dict_index = list(self.cell_ids.values()).index(element_id)
             x, y = list(self.cell_ids.keys())[dict_index]
 
-            if False:
+            if not self.stamp_active:
                 if self.cell_states[x, y] == 0:
                     self.canvas.itemconfig(element_id, fill=self.live_cell_color, outline=self.live_cell_color)
                     self.cell_states[x, y] = 1
