@@ -55,13 +55,14 @@ class App(tk.Tk):
         self.autoplay_active = False
 
         self.last_update_time = time.time()
-        self.target_game_speed = 0.05
         self.actual_game_speed = 0
 
         self.speed_display = tk.StringVar()
         self.speed_display.set("")
 
-        self.speed_slider_value = tk.IntVar()
+        self.speed_values = [1, 0.2, 0.1, 0.05, 0.02]
+        self.target_speed_value = tk.DoubleVar()
+        self.target_speed_value.set(self.speed_values[2])
 
         # True if a stamp is selected
         self.stamp_active = False
@@ -108,20 +109,18 @@ class App(tk.Tk):
         self.gen_speed_label = tk.Label(self.control_frame, textvariable=self.speed_display)
         self.gen_speed_label.pack(side="bottom")
 
-        self.speed_slider = tk.Scale(self.control_frame, orient="horizontal", from_=1, to=5, showvalue=False,
-                                     label="  1    5  10  20  50   ", variable=self.speed_slider_value, sliderlength=20,
-                                     sliderrelief="flat", relief="flat")
-        self.speed_slider.pack(side="bottom")
-
+        # FRAME: Speed Controls
         self.speed_control_frame = tk.Frame(self.control_frame)
         self.speed_control_frame.pack(side="bottom")
 
-        self.decrease_speed_button = tk.Button(self.speed_control_frame, text="-")
+        self.decrease_speed_button = tk.Button(self.speed_control_frame, text="-", width=2)
         self.decrease_speed_button.grid(row=0, column=0, rowspan=2, sticky="w")
 
-        self.increase_speed_button = tk.Button(self.speed_control_frame, text="+")
-        self.increase_speed_button.grid(row=0, column=0, rowspan=2, sticky="e")
+        self.target_speed_label = tk.Label(self.speed_control_frame, textvariable=self.target_speed_value)
+        self.target_speed_label.grid(row=1, column=1)
 
+        self.increase_speed_button = tk.Button(self.speed_control_frame, text="+", width=2)
+        self.increase_speed_button.grid(row=0, column=2, rowspan=2, sticky="e")
 
 
         """CANVAS"""
@@ -205,8 +204,6 @@ class App(tk.Tk):
         self.update_grid(new_gen_dict)
         self.current_gen.set(self.current_gen.get() + 1)
 
-        print(self.speed_slider_value.get())
-
     def auto_next_gen(self):
         if self.autoplay_active:
             self.last_update_time = time.time()
@@ -214,7 +211,7 @@ class App(tk.Tk):
             self.next_generation()
 
             self.actual_game_speed = time.time() - self.last_update_time
-            wait_time = self.target_game_speed - self.actual_game_speed
+            wait_time = self.target_speed_value.get() - self.actual_game_speed
             if wait_time <= 0:
                 wait_time = 0.001
             self.update_speed_display()
@@ -229,6 +226,9 @@ class App(tk.Tk):
         else:
             self.autoplay_button["text"] = "Start Autoplay"
             self.autoplay_active = False
+
+    def change_speed(self, step):
+        pass
 
     """EVENTS"""
 
@@ -306,7 +306,7 @@ class App(tk.Tk):
         gens_per_second = round(1 / self.actual_game_speed)
 
         try:
-            target_per_second = round(1 / self.target_game_speed)
+            target_per_second = round(1 / self.target_speed_value.get())
         except ZeroDivisionError:
             target_per_second = 9999
 
