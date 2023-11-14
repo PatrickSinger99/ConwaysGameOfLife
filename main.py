@@ -35,6 +35,22 @@ class App(tk.Tk):
 
         self.logo_bg_image = tk.PhotoImage(file="icons/logo_bg.png")
 
+        self.reset_bg = tk.PhotoImage(file="icons/reset_bg.png")
+        self.reset_fg = tk.PhotoImage(file="icons/reset_fg.png")
+        self.reset_active = tk.PhotoImage(file="icons/reset_active.png")
+
+        self.pause_bg = tk.PhotoImage(file="icons/pause_bg.png")
+        self.pause_fg = tk.PhotoImage(file="icons/pause_fg.png")
+        self.pause_active = tk.PhotoImage(file="icons/pause_active.png")
+
+        self.play_bg = tk.PhotoImage(file="icons/play_bg.png")
+        self.play_fg = tk.PhotoImage(file="icons/play_fg.png")
+        self.play_active = tk.PhotoImage(file="icons/play_active.png")
+
+        self.nextgen_bg = tk.PhotoImage(file="icons/nextgen_bg.png")
+        self.nextgen_fg = tk.PhotoImage(file="icons/nextgen_fg.png")
+        self.nextgen_active = tk.PhotoImage(file="icons/nextgen_active.png")
+
         """STATE VARIABLES"""
 
         # Grid elements
@@ -88,21 +104,47 @@ class App(tk.Tk):
         self.control_frame = tk.Frame(self, width=300, bg="grey")
         self.control_frame.grid(row=1, column=0, sticky="ns")
 
-        self.reset_button = tk.Button(self.control_frame, text="Reset", command=self.reset_grid)
-        self.reset_button.pack()
 
         self.random_button = tk.Button(self.control_frame, text="Random", command=self.random_grid)
         self.random_button.pack()
 
-        self.next_get_button = tk.Button(self.control_frame, text="Next Generation", command=self.next_generation)
-        self.next_get_button.pack()
 
-        self.autoplay_button = tk.Button(self.control_frame, text="Autoplay", command=self.toggle_autoplay)
-        self.autoplay_button.pack()
 
         self.reset_zoom_button = tk.Button(self.control_frame, text="Reset View", command=self.reset_canvas_view)
         self.reset_zoom_button.pack()
 
+
+        self.gen_buttons_frame = tk.Frame(self.control_frame)
+        self.gen_buttons_frame.pack(padx=10)
+
+        self.reset_button = tk.Button(self.gen_buttons_frame, text="Reset\n", command=self.reset_grid,
+                                      image=self.reset_bg, compound="top", relief="flat", cursor="hand2", bd=0,
+                                      bg=self.control_frame.cget("bg"), activebackground=self.control_frame.cget("bg"))
+        self.reset_button.bind("<Enter>", lambda e: self.reset_button.configure(image=self.reset_fg))
+        self.reset_button.bind("<Leave>", lambda e: self.reset_button.configure(image=self.reset_bg))
+        self.reset_button.bind("<Button-1>", lambda e: self.reset_button.configure(image=self.reset_active))
+        self.reset_button.bind("<ButtonRelease-1>", lambda e: self.reset_button.configure(image=self.reset_fg))
+        self.reset_button.pack(side="left")
+
+        self.next_get_button = tk.Button(self.gen_buttons_frame, text="Next\nGen", command=self.next_generation,
+                                         image=self.nextgen_bg, compound="top", relief="flat", cursor="hand2", bd=0,
+                                         bg=self.control_frame.cget("bg"), activebackground=self.control_frame.cget("bg"))
+        self.next_get_button.bind("<Enter>", lambda e: self.next_get_button.configure(image=self.nextgen_fg))
+        self.next_get_button.bind("<Leave>", lambda e: self.next_get_button.configure(image=self.nextgen_bg))
+        self.next_get_button.bind("<Button-1>", lambda e: self.next_get_button.configure(image=self.nextgen_active))
+        self.next_get_button.bind("<ButtonRelease-1>", lambda e: self.next_get_button.configure(image=self.nextgen_fg))
+        self.next_get_button.pack(side="left")
+
+        self.autoplay_button = tk.Button(self.gen_buttons_frame, text="Auto\nplay", command=self.toggle_autoplay,
+                                         image=self.play_bg, compound="top", relief="flat", cursor="hand2", bd=0,
+                                         bg=self.control_frame.cget("bg"), activebackground=self.control_frame.cget("bg"))
+        self.autoplay_button.bind("<Enter>", lambda e: self.autoplay_button.configure(image=self.play_fg))
+        self.autoplay_button.bind("<Leave>", lambda e: self.autoplay_button.configure(image=self.play_bg))
+        self.autoplay_button.bind("<Button-1>", lambda e: self.autoplay_button.configure(image=self.play_active))
+        self.autoplay_button.bind("<ButtonRelease-1>", lambda e: self.autoplay_button.configure(image=self.play_bg))
+        self.autoplay_button.pack(side="left")
+
+        # Speed and Generation
         self.generation_label = tk.Label(self.control_frame, textvariable=self.current_gen)
         self.generation_label.pack(side="bottom")
 
@@ -220,12 +262,23 @@ class App(tk.Tk):
 
     def toggle_autoplay(self):
         if not self.autoplay_active:
-            self.autoplay_button["text"] = "Stop Autoplay"
+            self.autoplay_button["text"] = "Pause\n"
             self.autoplay_active = True
             self.auto_next_gen()
+
+            self.autoplay_button.bind("<Enter>", lambda e: self.autoplay_button.configure(image=self.pause_fg))
+            self.autoplay_button.bind("<Leave>", lambda e: self.autoplay_button.configure(image=self.pause_bg))
+            self.autoplay_button.bind("<Button-1>", lambda e: self.autoplay_button.configure(image=self.pause_active))
+            self.autoplay_button.bind("<ButtonRelease-1>", lambda e: self.autoplay_button.configure(image=self.pause_bg))
+
         else:
-            self.autoplay_button["text"] = "Start Autoplay"
+            self.autoplay_button["text"] = "Auto\nplay"
             self.autoplay_active = False
+
+            self.autoplay_button.bind("<Enter>", lambda e: self.autoplay_button.configure(image=self.play_fg))
+            self.autoplay_button.bind("<Leave>", lambda e: self.autoplay_button.configure(image=self.play_bg))
+            self.autoplay_button.bind("<Button-1>", lambda e: self.autoplay_button.configure(image=self.play_active))
+            self.autoplay_button.bind("<ButtonRelease-1>", lambda e: self.autoplay_button.configure(image=self.play_bg))
 
     def change_speed(self, step):
         pass
